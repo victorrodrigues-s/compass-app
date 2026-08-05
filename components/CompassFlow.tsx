@@ -77,11 +77,13 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
     setStage('done');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     // Fire-and-forget: o usuário já respondeu o quiz inteiro, uma falha aqui
-    // não deveria virar tela de erro para ele.
+    // não deveria virar tela de erro para ele. Manda o conjunto base
+    // completo, não só o e-mail — o HubSpot valida campos obrigatórios do
+    // formulário em toda submissão, mesmo essa que só reforça o contato.
     fetch('/api/hubspot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: answers.email }),
+      body: JSON.stringify(answers),
     }).catch((err) => console.error('[compass] interesse em especialista falhou', err));
   }
 
@@ -103,7 +105,7 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
     return (
       <>
         <TrialForm
-          email={answers.email}
+          answers={answers}
           onSubmitted={() => {
             setStage('trial-done');
             window.scrollTo({ top: 0, behavior: 'smooth' });

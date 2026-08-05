@@ -3,22 +3,24 @@
 import { useState } from 'react';
 import { HONEYPOT_FIELD } from '@/lib/guard';
 import { cnpjDigits, formatCnpj, isValidCnpj } from '@/lib/validation';
+import type { QuizAnswers } from '@/lib/types';
 
 /**
  * "Testar gratuitamente" — único campo pendente é o CNPJ.
  *
- * Todo o resto (empresa via e-mail corporativo, gasto, como conheceu) já foi
- * coletado no quiz. CNPJ fica de fora do quiz porque é exigência de abertura
- * de conta, não pergunta de qualificação — só faz sentido pedir pra quem
- * realmente vai criar a conta agora.
+ * Todo o resto (empresa, gasto, como conheceu) já foi coletado no quiz — mas
+ * mandamos de novo aqui junto com o CNPJ. O HubSpot valida campos
+ * obrigatórios do formulário em toda submissão, então reenviar o conjunto
+ * base garante que essa etapa nunca falhe por falta de um campo que já foi
+ * preenchido antes (ver nota em lib/hubspot.ts).
  */
 
 export interface TrialFormProps {
-  email: string;
+  answers: QuizAnswers;
   onSubmitted: () => void;
 }
 
-export default function TrialForm({ email, onSubmitted }: TrialFormProps) {
+export default function TrialForm({ answers, onSubmitted }: TrialFormProps) {
   const [cnpj, setCnpj] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +38,7 @@ export default function TrialForm({ email, onSubmitted }: TrialFormProps) {
       const res = await fetch('/api/trial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, cnpj: cnpjDigits(cnpj), [HONEYPOT_FIELD]: honeypot }),
+        body: JSON.stringify({ ...answers, cnpj: cnpjDigits(cnpj), [HONEYPOT_FIELD]: honeypot }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -97,7 +99,7 @@ export default function TrialForm({ email, onSubmitted }: TrialFormProps) {
       </div>
 
       <p className="oc-muted" style={{ marginBottom: 18 }}>
-        A conta será criada para {email}.
+        A conta será criada para {answers.email}.
       </p>
 
       <button
