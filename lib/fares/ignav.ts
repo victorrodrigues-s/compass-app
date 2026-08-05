@@ -22,6 +22,19 @@ import type { Airport, FareProvider, FareQuote } from '@/lib/types';
 const BASE_URL = 'https://ignav.com';
 
 /**
+ * Códigos IATA de ÁREA METROPOLITANA (não são aeroportos físicos, não dá
+ * pra emitir passagem pra eles). SAO e RIO confirmados vazando na busca da
+ * Ignav em produção. Os demais são os códigos de metrô mais conhecidos
+ * internacionalmente, incluídos por precaução.
+ *
+ * ATENÇÃO ao adicionar itens aqui: confirme que o código é de fato uma área
+ * metropolitana e não um aeroporto único com nome parecido — por exemplo,
+ * BSB (Brasília) e REC (Recife) são aeroportos reais e NÃO entram nessa
+ * lista, mesmo sendo capitais grandes.
+ */
+const METRO_CODES = new Set(['SAO', 'RIO', 'NYC', 'WAS', 'CHI', 'LON', 'PAR']);
+
+/**
  * Desconto aplicado sobre a tarifa de mercado para chegar ao "valor Onfly".
  *
  * IMPORTANTE: este número é uma PREMISSA COMERCIAL, não um preço medido.
@@ -111,12 +124,23 @@ export const ignavProvider: FareProvider = {
       { method: 'GET' },
     );
 
-    const airports = rows.map((r) => ({
-      code: r.code,
-      name: r.name,
-      city: r.city,
-      country: r.country,
-    }));
+    // A doc da Ignav garante que a busca só devolve códigos de aeroporto, não
+    // de área metropolitana ("Results are airport codes only, not city or
+    // metro codes."). Na prática, já vimos SAO (área de São Paulo — engloba
+    // GRU/CGH/VCP) escapar por essa busca e chegar até a tela do usuário —
+    // confirmado em log de produção em 05/08/2026 (GIG → SAO, 0 itinerários,
+    // porque SAO não é um aeroporto físico, não dá pra emitir passagem pra
+    // ele). Por segurança, filtramos aqui os poucos códigos de metrô
+    // conhecidos, mesmo a Ignav prometendo não devolvê-los — evita que a
+    // pessoa escolha algo que nunca vai gerar uma tarifa real.
+    const airports = rows
+      .filter((r) => !METRO_CODES.has(r.code))
+      .map((r) => ({
+        code: r.code,
+        name: r.name,
+        city: r.city,
+        country: r.country,
+      }));
 
     sweep(airportCache);
     airportCache.set(cacheKey, { value: airports, expiresAt: Date.now() + AIRPORT_TTL_MS });
