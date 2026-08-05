@@ -3,15 +3,8 @@ import { getFareProvider } from '@/lib/fares';
 import { buildCompassReport } from '@/lib/compass';
 import { submitStep1 } from '@/lib/hubspot';
 import { checkRateLimit, clientIp, honeypotTripped } from '@/lib/guard';
-import { isValidEmail, isValidPhone } from '@/lib/validation';
-import {
-  HOW_HEARD_OPTIONS,
-  MONTHLY_SPEND_OPTIONS,
-  type BookingMethod,
-  type MainPain,
-  type QuizAnswers,
-  type TripVolumeBand,
-} from '@/lib/types';
+import { parseBaseAnswers } from '@/lib/quiz-validation';
+import { type MainPain, type QuizAnswers } from '@/lib/types';
 
 /**
  * POST /api/compass
@@ -26,34 +19,15 @@ import {
 
 export const runtime = 'nodejs';
 
-const VALID_VOLUMES: TripVolumeBand[] = ['1-10', '11-30', '31-80', '80+'];
-const VALID_METHODS: BookingMethod[] = ['agencia', 'direto', 'plataforma', 'misto'];
 const VALID_PAINS: MainPain[] = ['preco', 'tempo', 'comparar', 'reembolso', 'controle'];
 const IATA_RE = /^[A-Z]{3}$/;
 
 function parseAnswers(raw: any): { answers: QuizAnswers } | { error: string } {
-  if (!raw || typeof raw !== 'object') return { error: 'Corpo da requisição inválido.' };
+  const base = parseBaseAnswers(raw);
+  if ('error' in base) return base;
 
-  const firstName = String(raw.firstName ?? '').trim();
-  const email = String(raw.email ?? '').trim().toLowerCase();
-  const phone = String(raw.phone ?? '').trim();
-  const companyName = String(raw.companyName ?? '').trim();
-
-  if (firstName.length < 2) return { error: 'Informe seu nome.' };
-  if (!isValidEmail(email)) return { error: 'Informe um e-mail válido.' };
-  if (!isValidPhone(phone)) return { error: 'Informe um celular com DDD.' };
-  if (companyName.length < 2) return { error: 'Informe o nome da empresa.' };
   if (raw.consent !== true) return { error: 'É necessário aceitar o uso dos dados para continuar.' };
-
-  if (!VALID_VOLUMES.includes(raw.tripVolume)) return { error: 'Volume de viagens inválido.' };
-  if (!VALID_METHODS.includes(raw.bookingMethod)) return { error: 'Método de reserva inválido.' };
   if (!VALID_PAINS.includes(raw.mainPain)) return { error: 'Escolha inválida.' };
-  if (!MONTHLY_SPEND_OPTIONS.includes(raw.monthlySpend)) {
-    return { error: 'Selecione o gasto médio mensal com viagens.' };
-  }
-  if (!HOW_HEARD_OPTIONS.some((opt) => opt.value === raw.howHeard)) {
-    return { error: 'Selecione por onde conheceu a Onfly.' };
-  }
 
   const originCode = String(raw.originCode ?? '').trim().toUpperCase();
   const destinationCode = String(raw.destinationCode ?? '').trim().toUpperCase();
@@ -66,17 +40,10 @@ function parseAnswers(raw: any): { answers: QuizAnswers } | { error: string } {
 
   return {
     answers: {
-      firstName,
-      email,
-      phone,
-      companyName,
+      ...base.answers,
       originCode,
       destinationCode,
-      tripVolume: raw.tripVolume,
-      bookingMethod: raw.bookingMethod,
       mainPain: raw.mainPain,
-      monthlySpend: raw.monthlySpend,
-      howHeard: raw.howHeard,
       consent: true,
     },
   };
