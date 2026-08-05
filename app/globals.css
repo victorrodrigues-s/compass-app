@@ -1,0 +1,736 @@
+/*
+ * Tokens extraídos do report Compass original, para o quiz e o resultado
+ * ficarem visualmente contínuos com a peça já aprovada.
+ *
+ * Convenção de classes: prefixo `oc-` (onfly compass) + bloco + elemento.
+ * Evita colisão de especificidade com qualquer CSS da LP que hospedar isso.
+ */
+
+:root {
+  /* Marca */
+  --oc-blue: #0283fb;
+  --oc-blue-dark: #0062ab;
+  --oc-blue-050: #f7fbff;
+  --oc-blue-100: #eff8ff;
+  --oc-blue-200: #def0ff;
+  --oc-green: #00c785;
+  --oc-green-100: #eafff5;
+  --oc-red: #f34f4f;
+  --oc-amber: #ed7713;
+
+  /* Neutros */
+  --oc-ink: #0f1729;
+  --oc-ink-2: #3f4a60;
+  --oc-ink-3: #6b7689;
+  --oc-line: #e7ebf1;
+  --oc-surface: #ffffff;
+  --oc-canvas: #f7f9fc;
+
+  /* Tipografia
+     Nomes diretos, não variáveis do next/font. Se Poppins/Roboto não
+     carregarem (rede bloqueada, offline), a pilha de fallback assume e o
+     layout continua íntegro — só muda o desenho das letras. */
+  --oc-font-display: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --oc-font-body: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+
+  /* Ritmo */
+  --oc-radius: 14px;
+  --oc-radius-lg: 22px;
+  --oc-shadow: 0 1px 2px rgba(15, 23, 41, 0.04), 0 8px 24px rgba(15, 23, 41, 0.06);
+  --oc-shadow-lift: 0 2px 4px rgba(2, 131, 251, 0.08), 0 16px 40px rgba(2, 131, 251, 0.14);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--oc-font-body);
+  color: var(--oc-ink);
+  background: var(--oc-canvas);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout base ─────────────────────────────────────────────────────────── */
+
+.oc-shell {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.oc-card {
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line);
+  border-radius: var(--oc-radius-lg);
+  box-shadow: var(--oc-shadow);
+  padding: 32px;
+}
+
+@media (max-width: 640px) {
+  .oc-shell {
+    padding: 24px 14px 56px;
+  }
+  .oc-card {
+    padding: 22px 18px;
+    border-radius: var(--oc-radius);
+  }
+}
+
+/* ── Tipografia ──────────────────────────────────────────────────────────── */
+
+.oc-eyebrow {
+  font-family: var(--oc-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--oc-blue);
+}
+
+.oc-h1 {
+  font-family: var(--oc-font-display);
+  font-size: clamp(26px, 5vw, 40px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.oc-h2 {
+  font-family: var(--oc-font-display);
+  font-size: clamp(20px, 3.4vw, 26px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.oc-h3 {
+  font-family: var(--oc-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.oc-lead {
+  font-size: 17px;
+  color: var(--oc-ink-2);
+}
+
+.oc-muted {
+  font-size: 13px;
+  color: var(--oc-ink-3);
+}
+
+/* ── Progresso ───────────────────────────────────────────────────────────── */
+
+.oc-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.oc-progress-step {
+  height: 4px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--oc-line);
+  transition: background 0.35s ease;
+}
+
+.oc-progress-step[data-state='done'],
+.oc-progress-step[data-state='current'] {
+  background: var(--oc-blue);
+}
+
+/* ── Perguntas do quiz ───────────────────────────────────────────────────── */
+
+.oc-question {
+  animation: oc-slide-in 0.35s ease both;
+}
+
+.oc-question-title {
+  font-family: var(--oc-font-display);
+  font-size: clamp(21px, 3.6vw, 27px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.oc-question-help {
+  color: var(--oc-ink-3);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+
+.oc-options {
+  display: grid;
+  gap: 10px;
+}
+
+.oc-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  font-family: var(--oc-font-body);
+  font-size: 15px;
+  color: var(--oc-ink);
+  background: var(--oc-surface);
+  border: 1.5px solid var(--oc-line);
+  border-radius: var(--oc-radius);
+  padding: 15px 18px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+
+.oc-option:hover {
+  border-color: var(--oc-blue);
+  background: var(--oc-blue-050);
+}
+
+.oc-option:active {
+  transform: scale(0.995);
+}
+
+.oc-option[data-selected='true'] {
+  border-color: var(--oc-blue);
+  background: var(--oc-blue-100);
+}
+
+.oc-option-hint {
+  font-size: 13px;
+  color: var(--oc-ink-3);
+  flex-shrink: 0;
+}
+
+/* ── Campos de formulário ────────────────────────────────────────────────── */
+
+.oc-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.oc-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--oc-ink-2);
+}
+
+.oc-input,
+.oc-select {
+  font-family: var(--oc-font-body);
+  font-size: 15px;
+  color: var(--oc-ink);
+  background: var(--oc-surface);
+  border: 1.5px solid var(--oc-line);
+  border-radius: 11px;
+  padding: 12px 14px;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.oc-input:focus,
+.oc-select:focus {
+  outline: none;
+  border-color: var(--oc-blue);
+  box-shadow: 0 0 0 3px var(--oc-blue-200);
+}
+
+.oc-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.oc-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--oc-ink-3);
+  line-height: 1.5;
+  margin: 18px 0 22px;
+}
+
+.oc-consent input {
+  margin-top: 3px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--oc-blue);
+  flex-shrink: 0;
+}
+
+.oc-error {
+  font-size: 14px;
+  color: var(--oc-red);
+  background: #fff0f0;
+  border: 1px solid #ffdddd;
+  border-radius: 10px;
+  padding: 11px 14px;
+  margin-bottom: 16px;
+}
+
+/* ── Botões ──────────────────────────────────────────────────────────────── */
+
+.oc-btn {
+  font-family: var(--oc-font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border: 1.5px solid transparent;
+  border-radius: 11px;
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease, background 0.15s ease;
+}
+
+.oc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.oc-btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.oc-btn-primary {
+  background: var(--oc-blue);
+  color: #fff;
+  box-shadow: var(--oc-shadow-lift);
+}
+
+.oc-btn-primary:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+
+.oc-btn-ghost {
+  background: transparent;
+  color: var(--oc-ink-2);
+  border-color: var(--oc-line);
+}
+
+.oc-btn-ghost:not(:disabled):hover {
+  border-color: var(--oc-ink-3);
+  color: var(--oc-ink);
+}
+
+.oc-btn-block {
+  width: 100%;
+}
+
+.oc-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ── Estado de cálculo ───────────────────────────────────────────────────── */
+
+.oc-calculating {
+  text-align: center;
+  padding: 56px 20px;
+}
+
+.oc-calculating-dots {
+  display: inline-flex;
+  gap: 7px;
+  margin-bottom: 20px;
+}
+
+.oc-calculating-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--oc-blue);
+  animation: oc-pulse 1.1s ease-in-out infinite;
+}
+
+.oc-calculating-dots span:nth-child(2) { animation-delay: 0.15s; }
+.oc-calculating-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+/* ── Report ──────────────────────────────────────────────────────────────── */
+
+.oc-report {
+  animation: oc-slide-in 0.4s ease both;
+}
+
+.oc-report-header {
+  margin-bottom: 28px;
+}
+
+.oc-report-header .oc-h1 {
+  margin: 10px 0 12px;
+}
+
+/* Tabela comparativa — o coração do report */
+.oc-compare {
+  border: 1px solid var(--oc-line);
+  border-radius: var(--oc-radius);
+  overflow: hidden;
+  margin: 24px 0;
+}
+
+.oc-compare-head,
+.oc-compare-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 12px;
+  padding: 13px 18px;
+  align-items: center;
+}
+
+.oc-compare-head {
+  background: var(--oc-canvas);
+  border-bottom: 1px solid var(--oc-line);
+  font-family: var(--oc-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--oc-ink-3);
+}
+
+.oc-compare-head-onfly {
+  color: var(--oc-blue);
+}
+
+.oc-compare-row {
+  border-bottom: 1px solid var(--oc-line);
+  font-size: 14.5px;
+  animation: oc-row-in 0.4s ease both;
+}
+
+.oc-compare-row:last-child {
+  border-bottom: none;
+}
+
+.oc-compare-row[data-highlight='true'] {
+  background: var(--oc-blue-050);
+}
+
+.oc-compare-label {
+  color: var(--oc-ink-2);
+  font-weight: 500;
+}
+
+.oc-compare-today {
+  color: var(--oc-ink-3);
+}
+
+.oc-compare-onfly {
+  color: var(--oc-blue-dark);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .oc-compare-head {
+    display: none;
+  }
+  .oc-compare-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 15px 16px;
+  }
+  .oc-compare-today::before {
+    content: 'Hoje: ';
+    color: var(--oc-ink-3);
+    font-size: 12px;
+  }
+  .oc-compare-onfly::before {
+    content: 'Onfly: ';
+    color: var(--oc-blue);
+    font-size: 12px;
+  }
+}
+
+/* Bloco de economia — o número que o usuário vem buscar */
+.oc-savings {
+  background: linear-gradient(135deg, var(--oc-blue) 0%, var(--oc-blue-dark) 100%);
+  border-radius: var(--oc-radius-lg);
+  padding: 34px 30px;
+  color: #fff;
+  text-align: center;
+  margin: 28px 0;
+}
+
+.oc-savings-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.oc-savings-value {
+  font-family: var(--oc-font-display);
+  font-size: clamp(40px, 9vw, 68px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.oc-savings-note {
+  font-size: 13.5px;
+  opacity: 0.85;
+  margin-top: 10px;
+  max-width: 44ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Métricas secundárias */
+.oc-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.oc-metric {
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line);
+  border-radius: var(--oc-radius);
+  padding: 18px;
+}
+
+.oc-metric-value {
+  font-family: var(--oc-font-display);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--oc-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.oc-metric-label {
+  font-size: 13px;
+  color: var(--oc-ink-3);
+  margin-top: 2px;
+}
+
+/* Pilares */
+.oc-pillars {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.oc-pillar {
+  border: 1px solid var(--oc-line);
+  border-left: 3px solid var(--oc-blue);
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface);
+  padding: 20px 22px;
+}
+
+.oc-pillar-n {
+  font-family: var(--oc-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--oc-blue);
+  margin-bottom: 6px;
+}
+
+.oc-pillar-body {
+  font-size: 14.5px;
+  color: var(--oc-ink-2);
+  margin: 7px 0 12px;
+}
+
+.oc-chip {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--oc-blue-dark);
+  background: var(--oc-blue-100);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.oc-chip-green {
+  color: #007a52;
+  background: var(--oc-green-100);
+}
+
+/* Rodapé de auditoria */
+.oc-provenance {
+  font-size: 12px;
+  color: var(--oc-ink-3);
+  border-top: 1px solid var(--oc-line);
+  padding-top: 16px;
+  margin-top: 28px;
+}
+
+/* ── Sucesso ─────────────────────────────────────────────────────────────── */
+
+.oc-success {
+  text-align: center;
+  padding: 44px 24px;
+}
+
+.oc-success-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--oc-green-100);
+  color: var(--oc-green);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  font-size: 26px;
+}
+
+/* ── Animações ───────────────────────────────────────────────────────────── */
+
+@keyframes oc-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes oc-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes oc-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50%      { opacity: 1; transform: scale(1); }
+}
+
+/* Acessibilidade: foco sempre visível e motion respeitado */
+:focus-visible {
+  outline: 2px solid var(--oc-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Busca de aeroporto ──────────────────────────────────────────────────── */
+
+.oc-airport-wrap {
+  position: relative;
+}
+
+.oc-airport-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line);
+  border-radius: var(--oc-radius);
+  box-shadow: var(--oc-shadow);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.oc-airport-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: var(--oc-font-body);
+  font-size: 14.5px;
+  color: var(--oc-ink);
+  transition: background 0.12s ease;
+}
+
+.oc-airport-option:hover {
+  background: var(--oc-blue-050);
+}
+
+.oc-airport-code {
+  font-family: var(--oc-font-display);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--oc-blue-dark);
+  background: var(--oc-blue-100);
+  border-radius: 6px;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  min-width: 46px;
+  text-align: center;
+}
+
+.oc-airport-city {
+  display: block;
+  font-weight: 500;
+}
+
+.oc-airport-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--oc-ink-3);
+}
+
+.oc-airport-empty {
+  padding: 12px;
+  font-size: 13.5px;
+  color: var(--oc-ink-3);
+}
+
+.oc-airport-picked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+  background: var(--oc-blue-050);
+  border: 1.5px solid var(--oc-blue);
+  border-radius: 11px;
+  padding: 11px 14px;
+}
+
+.oc-airport-clear {
+  background: transparent;
+  border: none;
+  color: var(--oc-blue-dark);
+  font-family: var(--oc-font-body);
+  font-size: 13.5px;
+  text-decoration: underline;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Grade de 2 colunas (tela de gasto mensal) ──────────────────────────── */
+
+.oc-options-grid2 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 520px) {
+  .oc-options-grid2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
