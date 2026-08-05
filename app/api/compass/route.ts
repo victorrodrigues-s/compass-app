@@ -37,10 +37,12 @@ function parseAnswers(raw: any): { answers: QuizAnswers } | { error: string } {
   const firstName = String(raw.firstName ?? '').trim();
   const email = String(raw.email ?? '').trim().toLowerCase();
   const phone = String(raw.phone ?? '').trim();
+  const companyName = String(raw.companyName ?? '').trim();
 
   if (firstName.length < 2) return { error: 'Informe seu nome.' };
   if (!isValidEmail(email)) return { error: 'Informe um e-mail válido.' };
   if (!isValidPhone(phone)) return { error: 'Informe um celular com DDD.' };
+  if (companyName.length < 2) return { error: 'Informe o nome da empresa.' };
   if (raw.consent !== true) return { error: 'É necessário aceitar o uso dos dados para continuar.' };
 
   if (!VALID_VOLUMES.includes(raw.tripVolume)) return { error: 'Volume de viagens inválido.' };
@@ -49,7 +51,7 @@ function parseAnswers(raw: any): { answers: QuizAnswers } | { error: string } {
   if (!MONTHLY_SPEND_OPTIONS.includes(raw.monthlySpend)) {
     return { error: 'Selecione o gasto médio mensal com viagens.' };
   }
-  if (!HOW_HEARD_OPTIONS.includes(raw.howHeard)) {
+  if (!HOW_HEARD_OPTIONS.some((opt) => opt.value === raw.howHeard)) {
     return { error: 'Selecione por onde conheceu a Onfly.' };
   }
 
@@ -67,6 +69,7 @@ function parseAnswers(raw: any): { answers: QuizAnswers } | { error: string } {
       firstName,
       email,
       phone,
+      companyName,
       originCode,
       destinationCode,
       tripVolume: raw.tripVolume,
@@ -146,7 +149,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await submitStep1(answers, report, {
+    await submitStep1(answers, {
       hutk: req.cookies.get('hubspotutk')?.value,
       ipAddress: ip,
       pageUri: req.headers.get('referer') ?? undefined,
