@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { submitSpecialistInterest } from '@/lib/hubspot';
 import { checkRateLimit, clientIp } from '@/lib/guard';
-import { isValidEmail } from '@/lib/validation';
+import { parseBaseAnswers } from '@/lib/quiz-validation';
 
 /**
  * POST /api/hubspot
  *
- * Clique em "falar com especialista". Sem UI própria: nenhum dado novo é
- * necessário, então o clique já reforça a submissão do contato no HubSpot
- * (mesmo formulário da etapa 1) — sem uma propriedade de "caminho" própria,
- * já que o time optou por não criar uma nova agora.
+ * Clique em "falar com especialista". Reenvia o conjunto base completo de
+ * dados (não só o e-mail) — o HubSpot valida campos obrigatórios do
+ * formulário em toda submissão, mesmo uma que só pretende reforçar um
+ * contato já existente. Ver nota em lib/hubspot.ts.
  */
 
 export const runtime = 'nodejs';
@@ -31,13 +31,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 });
   }
 
-  const email = String(raw?.email ?? '').trim().toLowerCase();
-  if (!isValidEmail(email)) {
-    return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 });
+  const parsed = parseBaseAnswers(raw);
+  if ('error' in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
   try {
-    await submitSpecialistInterest(email, {
+    await submitSpecialistInterest(parsed.answers, {
       hutk: req.cookies.get('hubspotutk')?.value,
       ipAddress: ip,
       pageUri: req.headers.get('referer') ?? undefined,
