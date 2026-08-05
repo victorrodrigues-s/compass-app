@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlgApprovalCheck } from '@/lib/plg/hubspot-plg';
 
 /**
@@ -22,27 +22,43 @@ export type PollingOutcome =
  * `resetKey` existe só pra permitir "tentar de novo" depois de um timeout
  * ou erro — mudar esse valor reinicia o polling do zero mesmo com o mesmo
  * CNPJ (o efeito abaixo depende dos dois).
+ *
+ * BUG CORRIGIDO (05/08): a versão anterior guardava `attempt` e a flag de
+ * "parar" em useRef, compartilhados entre execuções do efeito. Em dev, com
+ * reactStrictMode ligado (next.config.mjs), o React monta o efeito, limpa,
+ * e monta de novo — e como os refs são os MESMOS objetos nas duas
+ * execuções, a segunda montagem zerava o contador e reabria a flag de
+ * "parar" enquanto o poll() da primeira montagem ainda estava com um
+ * fetch em voo. Resultado: duas cadeias de polling rodando em paralelo
+ * sobre o mesmo contador compartilhado, chegando ao limite de tentativas
+ * bem mais rápido que os 3 minutos esperados — e de um jeito que parecia
+ * "travado" porque o texto virava o de timeout sem o usuário perceber os
+ * ciclos de fetch acontecendo. Corrigido usando `cancelled`/`attempt`
+ * como variáveis locais do próprio efeito (closure), não refs — cada
+ * montagem do efeito agora tem sua própria contagem isolada, e o guard
+ * de cancelamento é checado de novo DEPOIS do await, não só antes.
  */
 export function usePlgApprovalPolling(cnpj: string | null, resetKey: number = 0): PollingOutcome {
   const [outcome, setOutcome] = useState<PollingOutcome>({ kind: 'waiting', attempt: 0 });
-  const attemptRef = useRef(0);
-  const stoppedRef = useRef(false);
 
   useEffect(() => {
     if (!cnpj) return;
-    stoppedRef.current = false;
-    attemptRef.current = 0;
+
+    let cancelled = false;
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout>;
     setOutcome({ kind: 'waiting', attempt: 0 });
 
-    let timer: ReturnType<typeof setTimeout>;
-
     async function poll() {
-      if (stoppedRef.current) return;
-      attemptRef.current += 1;
+      if (cancelled) return;
+      attempt += 1;
 
       try {
         const res = await fetch(`/api/plg/check-approval?cnpj=${encodeURIComponent(cnpj as string)}`);
+        if (cancelled) return; // reconfirma DEPOIS do await — é aqui que o bug antigo escapava
+
         const data: PlgApprovalCheck | { error: string } = await res.json();
+        if (cancelled) return;
 
         if (!res.ok || 'error' in data) {
           setOutcome({
@@ -67,19 +83,21 @@ export function usePlgApprovalPolling(cnpj: string | null, resetKey: number = 0)
         // Falha de rede pontual não interrompe o polling — só timeout.
       }
 
-      if (attemptRef.current >= MAX_ATTEMPTS) {
+      if (cancelled) return;
+
+      if (attempt >= MAX_ATTEMPTS) {
         setOutcome({ kind: 'timeout' });
         return;
       }
 
-      setOutcome((prev) => (prev.kind === 'waiting' ? { kind: 'waiting', attempt: attemptRef.current } : prev));
+      setOutcome((prev) => (prev.kind === 'waiting' ? { kind: 'waiting', attempt } : prev));
       timer = setTimeout(poll, POLL_INTERVAL_MS);
     }
 
     poll();
 
     return () => {
-      stoppedRef.current = true;
+      cancelled = true;
       clearTimeout(timer);
     };
   }, [cnpj, resetKey]);
