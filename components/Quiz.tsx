@@ -9,7 +9,6 @@ import {
   MONTHLY_SPEND_OPTIONS,
   type Airport,
   type BookingMethod,
-  type HowHeard,
   type MainPain,
   type MonthlySpendBand,
   type QuizAnswers,
@@ -63,12 +62,13 @@ export default function Quiz({ onComplete, submitting, error }: QuizProps) {
   const [bookingMethod, setBookingMethod] = useState<BookingMethod | ''>('');
   const [mainPain, setMainPain] = useState<MainPain | ''>('');
   const [monthlySpend, setMonthlySpend] = useState<MonthlySpendBand | ''>('');
-  const [howHeard, setHowHeard] = useState<HowHeard | ''>('');
+  const [howHeard, setHowHeard] = useState<string>('');
 
   const [origin, setOrigin] = useState<Airport | null>(null);
   const [destination, setDestination] = useState<Airport | null>(null);
 
   const [firstName, setFirstName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [consent, setConsent] = useState(false);
@@ -87,6 +87,7 @@ export default function Quiz({ onComplete, submitting, error }: QuizProps) {
 
   const finalStepValid =
     firstName.trim().length >= 2 &&
+    companyName.trim().length >= 2 &&
     isValidEmail(email) &&
     isValidPhone(phone) &&
     consent &&
@@ -111,8 +112,9 @@ export default function Quiz({ onComplete, submitting, error }: QuizProps) {
         bookingMethod,
         mainPain,
         monthlySpend,
-        howHeard: howHeard as HowHeard,
+        howHeard,
         firstName: firstName.trim(),
+        companyName: companyName.trim(),
         email: email.trim(),
         phone: phone.trim(),
         consent: true,
@@ -288,6 +290,20 @@ export default function Quiz({ onComplete, submitting, error }: QuizProps) {
           </div>
 
           <div className="oc-field">
+            <label className="oc-label" htmlFor="oc-company">
+              Nome da empresa
+            </label>
+            <input
+              id="oc-company"
+              className="oc-input"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              autoComplete="organization"
+              placeholder="Razão social ou nome fantasia"
+            />
+          </div>
+
+          <div className="oc-field">
             <label className="oc-label" htmlFor="oc-email">
               E-mail corporativo
             </label>
@@ -326,12 +342,12 @@ export default function Quiz({ onComplete, submitting, error }: QuizProps) {
               id="oc-how-heard"
               className="oc-select"
               value={howHeard}
-              onChange={(e) => setHowHeard(e.target.value as HowHeard)}
+              onChange={(e) => setHowHeard(e.target.value)}
             >
               <option value="">Selecione</option>
               {HOW_HEARD_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </select>
