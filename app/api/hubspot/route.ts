@@ -7,8 +7,9 @@ import { isValidEmail } from '@/lib/validation';
  * POST /api/hubspot
  *
  * Clique em "falar com especialista". Sem UI própria: nenhum dado novo é
- * necessário, então o clique já dispara a atualização do contato no HubSpot
- * (mesmo formulário da etapa 1) com a flag `compass_caminho: especialista`.
+ * necessário, então o clique já reforça a submissão do contato no HubSpot
+ * (mesmo formulário da etapa 1) — sem uma propriedade de "caminho" própria,
+ * já que o time optou por não criar uma nova agora.
  */
 
 export const runtime = 'nodejs';
