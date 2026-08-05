@@ -1,4 +1,5 @@
-import { BOOKING_METHOD_LABELS, TRIP_VOLUME_LABELS, type QuizAnswers } from '@/lib/types';
+import { BOOKING_METHOD_LABELS, TRIP_VOLUME_LABELS } from '@/lib/types';
+import type { BaseAnswers } from '@/lib/quiz-validation';
 
 /**
  * Integração com a Forms API v3 do HubSpot.
@@ -14,6 +15,16 @@ import { BOOKING_METHOD_LABELS, TRIP_VOLUME_LABELS, type QuizAnswers } from '@/l
  * têm propriedade correspondente e o time optou por não criar uma agora.
  * Esses dados continuam existindo no relatório mostrado na tela, só não vão
  * para o CRM.
+ *
+ * IMPORTANTE — campos obrigatórios do formulário: o HubSpot valida TODOS os
+ * campos marcados como obrigatórios no formulário em QUALQUER submissão a
+ * esse form ID, mesmo uma que só pretende reforçar/atualizar um contato já
+ * criado. Descoberto em produção (05/08/2026): "falar com especialista"
+ * mandava só o e-mail e levava 400, porque company/firstname/
+ * self_attribution_message estão marcados obrigatórios no form. Por isso as
+ * três funções abaixo sempre mandam o conjunto base inteiro — nunca dependem
+ * de saber quais campos estão marcados como obrigatórios no HubSpot agora ou
+ * no futuro.
  */
 
 const HUBSPOT_BASE_URL = process.env.HUBSPOT_BASE_URL ?? 'https://api.hsforms.com';
@@ -32,6 +43,22 @@ const CONTACT = '0-1';
 function field(name: string, value: string | number | undefined | null): HubSpotField | null {
   if (value === undefined || value === null || value === '') return null;
   return { objectTypeId: CONTACT, name, value: String(value) };
+}
+
+/** Os campos que TODA submissão manda, independente do caminho. */
+function baseFields(answers: BaseAnswers): (HubSpotField | null)[] {
+  return [
+    field('email', answers.email),
+    field('firstname', answers.firstName),
+    field('phone', answers.phone),
+    field('company', answers.companyName),
+    // Campos de texto livre no HubSpot: mandamos rótulo legível, não o código interno.
+    field('quantas_viagens_sua_empresa_faz_por_ms', TRIP_VOLUME_LABELS[answers.tripVolume]),
+    field('usa_alguma_agncia_de_viagem_', BOOKING_METHOD_LABELS[answers.bookingMethod]),
+    // Enumeração: o valor já é o valor real do HubSpot (validado contra a API).
+    field('gmv_empresa', answers.monthlySpend),
+    field('self_attribution_message', answers.howHeard),
+  ];
 }
 
 async function submitForm(
@@ -85,57 +112,48 @@ async function submitForm(
   }
 }
 
+const CONSENT_TEXT =
+  'Autorizo a Onfly a armazenar e tratar meus dados para envio do diagnóstico e comunicações relacionadas.';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Submissão 1 — quiz completo, ao gerar o report
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CONSENT_TEXT =
-  'Autorizo a Onfly a armazenar e tratar meus dados para envio do diagnóstico e comunicações relacionadas.';
-
-export async function submitStep1(answers: QuizAnswers, context: SubmitContext): Promise<void> {
-  await submitForm(
-    [
-      field('email', answers.email),
-      field('firstname', answers.firstName),
-      field('phone', answers.phone),
-      field('company', answers.companyName),
-      // Campos de texto livre no HubSpot: mandamos rótulo legível, não o código interno.
-      field('quantas_viagens_sua_empresa_faz_por_ms', TRIP_VOLUME_LABELS[answers.tripVolume]),
-      field('usa_alguma_agncia_de_viagem_', BOOKING_METHOD_LABELS[answers.bookingMethod]),
-      // Enumeração: o valor já é o valor real do HubSpot (validado contra a API).
-      field('gmv_empresa', answers.monthlySpend),
-      field('self_attribution_message', answers.howHeard),
-    ],
-    context,
-    CONSENT_TEXT,
-  );
+export async function submitStep1(answers: BaseAnswers, context: SubmitContext): Promise<void> {
+  await submitForm(baseFields(answers), context, CONSENT_TEXT);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Submissão 2 — clique em "falar com especialista"
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Reenvia o mesmo conjunto base já enviado na submissão 1. Parece redundante
+ * — é a mesma pessoa, os mesmos dados — mas é justamente isso que garante
+ * que os campos obrigatórios do form sempre estejam presentes, sem depender
+ * de nenhuma configuração externa.
+ */
 export async function submitSpecialistInterest(
-  email: string,
+  answers: BaseAnswers,
   context: SubmitContext,
 ): Promise<void> {
-  // Sem propriedade para registrar "qual caminho" (não criamos uma nova), então
-  // essa submissão só reforça/atualiza o contato pelo e-mail já conhecido.
-  await submitForm([field('email', email)], context);
+  await submitForm(baseFields(answers), context);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Submissão 3 — CNPJ no "testar grátis"
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * ATENÇÃO: a propriedade "cnpj" no HubSpot é do tipo Número, não Texto. Um
+ * CNPJ que comece com zero perde o dígito à esquerda ao ser armazenado como
+ * número — isso é a configuração da propriedade, não algo que dá para
+ * contornar por aqui.
+ */
 export async function submitTrialInterest(
-  email: string,
+  answers: BaseAnswers,
   cnpj: string,
   context: SubmitContext,
 ): Promise<void> {
-  // ATENÇÃO: a propriedade "cnpj" no HubSpot é do tipo Número, não Texto.
-  // Um CNPJ que comece com zero perde o dígito à esquerda ao ser armazenado
-  // como número — isso é a configuração da propriedade, não algo que dá para
-  // contornar por aqui.
-  await submitForm([field('email', email), field('cnpj', cnpj)], context);
+  await submitForm([...baseFields(answers), field('cnpj', cnpj)], context);
 }
