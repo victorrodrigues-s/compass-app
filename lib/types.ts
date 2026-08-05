@@ -47,6 +47,25 @@ export type BookingMethod = 'agencia' | 'direto' | 'plataforma' | 'misto';
 export type TripVolumeBand = '1-10' | '11-30' | '31-80' | '80+';
 
 /**
+ * usa_alguma_agncia_de_viagem_ e quantas_viagens_sua_empresa_faz_por_ms são
+ * campos de TEXTO LIVRE no HubSpot (confirmado via API — não são dropdown).
+ * Por isso mandamos texto legível em vez do código interno ('direto', '1-10').
+ */
+export const BOOKING_METHOD_LABELS: Record<BookingMethod, string> = {
+  agencia: 'Por uma agência de viagens',
+  direto: 'Direto no site de cada fornecedor',
+  plataforma: 'Em uma plataforma de gestão',
+  misto: 'Depende de quem está viajando',
+};
+
+export const TRIP_VOLUME_LABELS: Record<TripVolumeBand, string> = {
+  '1-10': 'Até 10 viagens por mês',
+  '11-30': '11 a 30 viagens por mês',
+  '31-80': '31 a 80 viagens por mês',
+  '80+': 'Mais de 80 viagens por mês',
+};
+
+/**
  * Dor principal. 'comparar' é distinta de 'tempo': 'tempo' é sobre o processo
  * de reserva como um todo, 'comparar' é especificamente sobre a fadiga de
  * pesquisar preço em vários lugares antes de decidir.
@@ -84,33 +103,43 @@ export const TRIAL_ONLY_SPEND: MonthlySpendBand = 'Até 10 mil reais/mês';
  * Canais de origem — lista real, tirada do dropdown já existente no HubSpot.
  * MESMA RESSALVA: precisa bater exatamente com a propriedade de lá.
  */
-export const HOW_HEARD_OPTIONS = [
-  'Aeroporto & Outdoor',
-  'Blog e Conteúdos Onfly',
-  'Cinema',
-  'Elevador comercial',
-  'Empresa Parceira',
-  'Evento',
-  'Google',
-  'Indicação',
-  'Influenciador',
-  'Instagram/Facebook/Tiktok',
-  'LinkedIn',
-  'Podcast/Imprensa/Sites de notícia',
-  'Spotify & Rádio',
-  'Taxi & Uber',
-  'TV & Streaming',
-  'TV de Bordo Azul',
-  'Um vendedor me abordou',
-  'YouTube',
-  'Outros',
-] as const;
+/**
+ * Confirmado via API do HubSpot (propriedade self_attribution_message) em
+ * 05/08/2026 — não é mais um palpite tirado de print. O rótulo é o que a
+ * pessoa vê no select; o valor é o que precisa ser enviado, e em vários
+ * casos eles DIVERGEM (ex.: rótulo "Aeroporto & Outdoor", valor "Aeroporto").
+ * Nunca use o rótulo como valor enviado.
+ */
+export const HOW_HEARD_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Aeroporto', label: 'Aeroporto & Outdoor' },
+  { value: 'Blog e Conteúdos Onfly', label: 'Blog e Conteúdos Onfly' },
+  { value: 'Cinema', label: 'Cinema' },
+  { value: 'Elevador comercial', label: 'Elevador comercial' },
+  { value: 'Empresa Parceira', label: 'Empresa Parceira' },
+  { value: 'Evento', label: 'Evento' },
+  { value: 'Google', label: 'Google' },
+  { value: 'Indicação', label: 'Indicação' },
+  { value: 'Influênciador', label: 'Influenciador' },
+  { value: 'Instagram/Facebook', label: 'Instagram/Facebook/Tiktok' },
+  { value: 'LinkedIn', label: 'LinkedIn' },
+  { value: 'Imprensa/Sites de notícia', label: 'Podcast/Imprensa/Sites de notícia' },
+  { value: 'Anúncio do Spotify', label: 'Spotify & Rádio' },
+  { value: 'Taxi & Uber', label: 'Taxi & Uber' },
+  { value: 'TV', label: 'TV & Streaming' },
+  { value: 'TV de Bordo Azul', label: 'TV de Bordo Azul' },
+  { value: 'Um vendedor me abordou', label: 'Um vendedor me abordou' },
+  { value: 'YouTube', label: 'YouTube' },
+  { value: 'Outros', label: 'Outros' },
+];
 
-export type HowHeard = (typeof HOW_HEARD_OPTIONS)[number];
+export type HowHeard = string;
 
 export interface QuizAnswers {
   originCode: string;
   destinationCode: string;
+
+  /** Mapeado para a propriedade "company", já existente no HubSpot. */
+  companyName: string;
 
   tripVolume: TripVolumeBand;
   bookingMethod: BookingMethod;

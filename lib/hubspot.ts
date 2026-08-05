@@ -1,26 +1,19 @@
-import type { QuizAnswers, CompassReport } from '@/lib/types';
+import { BOOKING_METHOD_LABELS, TRIP_VOLUME_LABELS, type QuizAnswers } from '@/lib/types';
 
 /**
  * Integração com a Forms API v3 do HubSpot.
  *
  * SÓ EXISTE UM FORMULÁRIO (HUBSPOT_FORM_ID_STEP1). As três chamadas abaixo
- * enviam para o MESMO form ID:
+ * enviam para o MESMO form ID; o HubSpot casa pelo e-mail e atualiza o mesmo
+ * contato, nunca cria um novo.
  *
- *   submitStep1                — dispara ao gerar o report, com tudo do quiz.
- *   submitSpecialistInterest   — clique em "falar com especialista".
- *   submitTrialInterest        — envio do CNPJ no "testar grátis".
- *
- * O HubSpot casa pelo e-mail: a segunda e terceira chamadas ATUALIZAM o mesmo
- * contato criado na primeira, não criam um novo. Por isso cada uma manda só
- * os campos que tem de novo — não precisa repetir nome, telefone etc.
- *
- * ATENÇÃO: a API rejeita campos que não existem na definição do formulário.
- * Cada `name` abaixo precisa existir como campo do form E como propriedade de
- * contato no portal. `compass_gasto_mensal` e `compass_como_conheceu` parecem
- * ser propriedades JÁ EXISTENTES no seu HubSpot (os prints batem com dropdowns
- * que vocês já usam) — confirme o nome interno real dessas duas antes de
- * apontar as env vars, porque se eu inventei o nome errado, a submissão
- * inteira quebra silenciosamente.
+ * TODAS as propriedades abaixo JÁ EXISTEM no portal — confirmadas via API do
+ * HubSpot em 05/08/2026, não por print. Nenhuma propriedade nova é criada.
+ * Deliberadamente NÃO enviamos: aeroporto de origem/destino, dor principal,
+ * economia anual projetada, horas economizadas e o caminho escolhido — não
+ * têm propriedade correspondente e o time optou por não criar uma agora.
+ * Esses dados continuam existindo no relatório mostrado na tela, só não vão
+ * para o CRM.
  */
 
 const HUBSPOT_BASE_URL = process.env.HUBSPOT_BASE_URL ?? 'https://api.hsforms.com';
@@ -99,25 +92,19 @@ async function submitForm(
 const CONSENT_TEXT =
   'Autorizo a Onfly a armazenar e tratar meus dados para envio do diagnóstico e comunicações relacionadas.';
 
-export async function submitStep1(
-  answers: QuizAnswers,
-  report: CompassReport,
-  context: SubmitContext,
-): Promise<void> {
+export async function submitStep1(answers: QuizAnswers, context: SubmitContext): Promise<void> {
   await submitForm(
     [
       field('email', answers.email),
       field('firstname', answers.firstName),
       field('phone', answers.phone),
-      field('compass_origem_voo', answers.originCode),
-      field('compass_destino_voo', answers.destinationCode),
-      field('compass_volume_viagens', answers.tripVolume),
-      field('compass_metodo_reserva', answers.bookingMethod),
-      field('compass_dor_principal', answers.mainPain),
-      field('compass_gasto_mensal', answers.monthlySpend),
-      field('compass_como_conheceu', answers.howHeard),
-      field('compass_economia_anual', (report.projection.annualSavingsCents / 100).toFixed(2)),
-      field('compass_horas_economizadas', report.projection.hoursSavedPerYear),
+      field('company', answers.companyName),
+      // Campos de texto livre no HubSpot: mandamos rótulo legível, não o código interno.
+      field('quantas_viagens_sua_empresa_faz_por_ms', TRIP_VOLUME_LABELS[answers.tripVolume]),
+      field('usa_alguma_agncia_de_viagem_', BOOKING_METHOD_LABELS[answers.bookingMethod]),
+      // Enumeração: o valor já é o valor real do HubSpot (validado contra a API).
+      field('gmv_empresa', answers.monthlySpend),
+      field('self_attribution_message', answers.howHeard),
     ],
     context,
     CONSENT_TEXT,
@@ -132,10 +119,9 @@ export async function submitSpecialistInterest(
   email: string,
   context: SubmitContext,
 ): Promise<void> {
-  await submitForm(
-    [field('email', email), field('compass_caminho', 'especialista')],
-    context,
-  );
+  // Sem propriedade para registrar "qual caminho" (não criamos uma nova), então
+  // essa submissão só reforça/atualiza o contato pelo e-mail já conhecido.
+  await submitForm([field('email', email)], context);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -147,8 +133,9 @@ export async function submitTrialInterest(
   cnpj: string,
   context: SubmitContext,
 ): Promise<void> {
-  await submitForm(
-    [field('email', email), field('compass_cnpj', cnpj), field('compass_caminho', 'trial')],
-    context,
-  );
+  // ATENÇÃO: a propriedade "cnpj" no HubSpot é do tipo Número, não Texto.
+  // Um CNPJ que comece com zero perde o dígito à esquerda ao ser armazenado
+  // como número — isso é a configuração da propriedade, não algo que dá para
+  // contornar por aqui.
+  await submitForm([field('email', email), field('cnpj', cnpj)], context);
 }
