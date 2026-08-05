@@ -10,7 +10,17 @@ import { TRIAL_ONLY_SPEND, type CompassReport, type QuizAnswers } from '@/lib/ty
 /**
  * Máquina de estados do funil:
  *
- *   quiz ──> calculating ──> report ──> (thank-you direto | trial) ──> done
+ *   quiz ──> report ──> (thank-you direto | trial) ──> done
+ *
+ * "Calculando" NÃO é um stage próprio — é um booleano (`submitting`) passado
+ * pro Quiz, que continua montado o tempo todo da submissão. Antes disso era
+ * um stage separado que trocava a tela inteira; isso REMONTAVA o Quiz ao
+ * voltar de um erro, e remontar zera todo o state interno dele (em que
+ * pergunta a pessoa estava, o que já tinha digitado). Resultado: uma falha
+ * pontual de rede fazia o quiz inteiro "reiniciar" para quem já tinha
+ * respondido tudo. Manter o componente montado evita esse problema por
+ * completo — a pessoa só vê o botão trocar para "Calculando…" e, se falhar,
+ * continua exatamente onde estava.
  *
  * "Falar com especialista" não tem tela própria: ao clicar, já mostramos o
  * agradecimento e disparamos a atualização do HubSpot em segundo plano — sem
@@ -18,24 +28,22 @@ import { TRIAL_ONLY_SPEND, type CompassReport, type QuizAnswers } from '@/lib/ty
  * falha nossa não deveria virar problema de quem já preencheu tudo).
  */
 
-type Stage = 'quiz' | 'calculating' | 'report' | 'trial' | 'done' | 'trial-done';
+type Stage = 'quiz' | 'report' | 'trial' | 'done' | 'trial-done';
 
 export interface CompassFlowProps {
   trialUrl: string;
 }
 
-const MIN_CALCULATING_MS = 1400;
-
 export default function CompassFlow({ trialUrl }: CompassFlowProps) {
   const [stage, setStage] = useState<Stage>('quiz');
+  const [submitting, setSubmitting] = useState(false);
   const [report, setReport] = useState<CompassReport | null>(null);
   const [answers, setAnswers] = useState<QuizAnswers | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleQuizComplete(quizAnswers: QuizAnswers, honeypot: string) {
     setError(null);
-    setStage('calculating');
-    const startedAt = Date.now();
+    setSubmitting(true);
 
     try {
       const res = await fetch('/api/compass', {
@@ -47,14 +55,11 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        // Fica no stage 'quiz' — o Quiz NUNCA desmonta aqui, então tudo que
+        // a pessoa já respondeu continua exatamente como estava.
         setError(data.error ?? 'Não conseguimos gerar seu diagnóstico. Tente novamente.');
-        setStage('quiz');
+        setSubmitting(false);
         return;
-      }
-
-      const elapsed = Date.now() - startedAt;
-      if (elapsed < MIN_CALCULATING_MS) {
-        await new Promise((r) => setTimeout(r, MIN_CALCULATING_MS - elapsed));
       }
 
       setAnswers(quizAnswers);
@@ -63,7 +68,7 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       setError('Falha de conexão. Verifique sua internet e tente novamente.');
-      setStage('quiz');
+      setSubmitting(false);
     }
   }
 
@@ -78,22 +83,6 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: answers.email }),
     }).catch((err) => console.error('[compass] interesse em especialista falhou', err));
-  }
-
-  if (stage === 'calculating') {
-    return (
-      <div className="oc-card oc-calculating">
-        <div className="oc-calculating-dots" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-        <h2 className="oc-h2">Comparando com tarifas reais</h2>
-        <p className="oc-lead" style={{ marginTop: 8 }}>
-          Estamos buscando o preço atual desse trecho para montar o diagnóstico.
-        </p>
-      </div>
-    );
   }
 
   if (stage === 'report' && report && answers) {
@@ -168,5 +157,5 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
     );
   }
 
-  return <Quiz onComplete={handleQuizComplete} submitting={false} error={error} />;
+  return <Quiz onComplete={handleQuizComplete} submitting={submitting} error={error} />;
 }
