@@ -42,6 +42,8 @@ const MARKET = process.env.IGNAV_MARKET ?? 'BR';
 const SEARCH_LEAD_DAYS = Number(process.env.IGNAV_LEAD_DAYS ?? '21');
 
 const QUOTE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
+/** TTL curto para "sem voo encontrado" — não gruda esse resultado por 12h se foi transitório. */
+const EMPTY_RESULT_TTL_MS = 1000 * 60 * 5; // 5min
 const AIRPORT_TTL_MS = 1000 * 60 * 60 * 24; // 24h
 
 type CacheEntry<T> = { value: T; expiresAt: number };
@@ -179,10 +181,25 @@ export const ignavProvider: FareProvider = {
         carrier: cheapest.outbound?.carrier ?? null,
         priceStatus: cheapest.price.status,
       };
+    } else {
+      // Não é erro — a Ignav respondeu OK, só não tem voo para esse par na
+      // data pesquisada. Logamos mesmo assim: sem isso, esse caso é invisível
+      // nos logs da Vercel e vira "não sei por que aconteceu" na hora de
+      // investigar.
+      console.warn('[ignav] busca sem itinerários', {
+        originCode,
+        destinationCode,
+        departureDate,
+        itinerariesCount: data.itineraries?.length ?? 0,
+      });
     }
 
     sweep(quoteCache);
-    quoteCache.set(cacheKey, { value, expiresAt: Date.now() + QUOTE_TTL_MS });
+    // Resultado vazio fica em cache por menos tempo que um preço real: se foi
+    // um blip pontual da Ignav, a próxima pessoa buscando o mesmo trecho não
+    // deveria ficar presa a esse "sem voo" por 12h inteiras.
+    const ttl = value ? QUOTE_TTL_MS : EMPTY_RESULT_TTL_MS;
+    quoteCache.set(cacheKey, { value, expiresAt: Date.now() + ttl });
     return value;
   },
 };
