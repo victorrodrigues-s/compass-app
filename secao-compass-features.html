@@ -1,0 +1,75 @@
+<!--
+  Cabeçalho da seção + o próprio quiz do Compass embedado por iframe
+  (é a resposta que você deu: "o quiz do compass", conversão final, sem
+  redirecionar pra lugar nenhum depois).
+
+  Ajustei o texto do lead — o antigo prometia "quatro coisas" que não
+  existem mais nesta versão sem cards; agora ele descreve o que vem
+  logo abaixo (o quiz embedado). Se não for o texto que você quer, é só
+  trocar a frase dentro de <p class="features__lead">.
+
+  Por que o iframe deve funcionar sem trabalho extra:
+    - app/page.tsx do Compass já tem um comentário prevendo esse cenário:
+      "se essa página for embedada dentro da LP institucional [...] o
+      único componente necessário é <CompassFlow />" — ou seja, já foi
+      pensado pra isso.
+    - next.config.mjs não define X-Frame-Options nem CSP frame-ancestors
+      hoje, então não há nada bloqueando o embed em outro domínio.
+
+  Como inserir no Elementor:
+    1. Dentro dessa seção, adicione um widget "HTML" (Elementor) logo
+       abaixo do cabeçalho.
+    2. Cole o bloco <div class="compass-embed">...</div> abaixo, inteiro
+       (inclui o <style> de altura responsiva).
+    3. Publique em preview antes de ir pra produção — teste no celular
+       especialmente, a altura fixa abaixo é um chute inicial.
+
+  O que ainda precisa de decisão sua:
+    1. ALTURA FIXA (900px desktop / 1200px mobile) é só um teste rápido.
+       Como o quiz muda de tamanho a cada uma das 6 telas + relatório
+       final, altura fixa vai sobrar espaço em telas curtas e cortar em
+       telas longas, com scroll dentro do iframe. O jeito certo — o
+       iframe se redimensionar sozinho conforme o conteúdo do quiz muda
+       (via postMessage) — exige mexer no código do Compass (CompassFlow
+       emitindo altura) e no JS do Elementor (ouvindo e ajustando o
+       iframe). Não fiz isso agora porque é mudança de código, não só
+       texto/HTML — avise se quiser que eu implemente.
+    2. Qual domínio usar no src: coloquei o mais curto documentado
+       (onfly-compass-app.vercel.app). Confirme se é esse mesmo antes de
+       publicar.
+-->
+<div class="product-page-cartao">
+	<section class="features">
+		<div class="container">
+			<div class="features__header">
+				<div class="eyebrow-pill">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+					Diagnóstico gratuito
+				</div>
+				<h2 class="tx-hero-md features__title">
+					Descubra como a Onfly faz sentido <em>para sua empresa</em>
+				</h2>
+				<p class="features__lead">
+					Responda ao diagnóstico abaixo e veja, com dados reais, quanto sua empresa economizaria — sem sair desta página.
+				</p>
+			</div>
+
+			<!-- Widget "HTML" do Elementor: colar tudo daqui até o fim do </style> -->
+			<div class="compass-embed">
+				<iframe
+					src="https://onfly-compass-app.vercel.app"
+					title="Diagnóstico Onfly Compass"
+					loading="lazy"
+					allow="clipboard-write"
+				></iframe>
+			</div>
+			<style>
+				.compass-embed { width: 100%; max-width: 720px; margin: 0 auto; }
+				.compass-embed iframe { width: 100%; height: 900px; border: 0; display: block; border-radius: 12px; }
+				@media (max-width: 768px) {
+					.compass-embed iframe { height: 1200px; }
+				}
+			</style>
+		</div>
+	</section>
+</div>

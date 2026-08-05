@@ -1,0 +1,28 @@
+<!doctype html>
+<!--
+  Teste isolado: só o iframe, sem WordPress/Elementor no meio.
+  Como usar: dê duplo clique neste arquivo pra abrir direto no navegador
+  (não precisa de servidor).
+
+  Se o quiz carregar aqui → o bloqueio é do lado do WordPress (CSP de algum
+  plugin de segurança, ou do tema) — não é mais a Vercel.
+  Se ainda aparecer "conteúdo bloqueado" aqui → ainda é algo do lado da
+  Vercel/Compass, e a gente investiga por ali (headers de resposta, cache
+  de edge, etc.).
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Teste isolado — iframe Compass</title>
+</head>
+<body style="margin:0; font-family:sans-serif;">
+  <p style="padding:12px; background:#fffbe6; margin:0;">
+    Teste isolado — se o quiz aparecer abaixo, o bloqueio é do WordPress, não da Vercel.
+  </p>
+  <iframe
+    src="https://onfly-compass-app.vercel.app/"
+    title="Diagnóstico Onfly Compass"
+    style="width:100%; height:900px; border:0; display:block;"
+  ></iframe>
+</body>
+</html>

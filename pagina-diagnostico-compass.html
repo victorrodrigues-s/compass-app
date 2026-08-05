@@ -1,0 +1,164 @@
+<!--
+  Landing page enxuta do diagnóstico Compass — só hero (com o quiz
+  embedado) + prova social (clientes/cases). Cortei "como funciona",
+  "por que importa" e FAQ que tinha colocado numa versão anterior — não
+  precisa ser uma página grande.
+
+  Classes confirmadas, reaproveitadas do exemplo que você mandou: features,
+  features__header, features__title, features__lead, eyebrow-pill,
+  tx-hero-md, container, feature-card e variações, clip-booking/report.
+
+  Prova social agora com os 4 cases reais que você mandou (PicPay, Madero,
+  Faber-Castell, Meliuz) — cada card é o thumbnail do vídeo (clicável, abre
+  o YouTube em nova aba) + a headline. Reaproveitei clip-card (imagem +
+  linha de texto) pra isso; o botão de play por cima da imagem é CSS puro,
+  não depende de nenhuma classe do site.
+
+  Pendente, sem fabricar dado nenhum:
+    - Mesmo ponto de sempre: iframe com altura fixa (ver TODO na seção) e
+      o bloqueio de iframe que seu time está validando (CSP do WordPress).
+-->
+<div class="product-page-cartao">
+
+	<!-- HERO — cabeçalho + o próprio quiz embedado -->
+	<section class="features" id="hero">
+		<div class="container">
+			<div class="features__header">
+				<div class="eyebrow-pill">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+					Diagnóstico gratuito
+				</div>
+				<h1 class="tx-hero-md features__title">
+					Descubra como a Onfly faz sentido <em>para sua empresa</em>
+				</h1>
+				<p class="features__lead">
+					Responda ao diagnóstico abaixo e veja, com dados reais, quanto sua empresa economizaria — sem sair desta página.
+				</p>
+			</div>
+
+			<!-- Widget "HTML" do Elementor: colar tudo daqui até o fim do </style> -->
+			<div class="compass-embed" id="diagnostico">
+				<iframe
+					src="https://onfly-compass-app.vercel.app"
+					title="Diagnóstico Onfly Compass"
+					loading="lazy"
+					allow="clipboard-write"
+				></iframe>
+			</div>
+			<style>
+				.compass-embed { width: 100%; max-width: 720px; margin: 0 auto; }
+				.compass-embed iframe { width: 100%; height: 900px; border: 0; display: block; border-radius: 12px; }
+				@media (max-width: 768px) {
+					.compass-embed iframe { height: 1200px; }
+				}
+			</style>
+		</div>
+	</section>
+
+	<!-- PROVA SOCIAL — clientes + case, ambos placeholder -->
+	<section class="features">
+		<div class="container">
+			<div class="features__header">
+				<div class="eyebrow-pill">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+					Quem já usou
+				</div>
+				<h2 class="tx-hero-md features__title">
+					Empresas que já pararam de adivinhar quanto gastam em viagem
+				</h2>
+			</div>
+
+			<div class="features__grid">
+				<!-- Case — PicPay -->
+				<div class="feature-card">
+					<div class="feature-card__num">Case</div>
+					<h3 class="feature-card__title">PicPay</h3>
+					<p class="feature-card__desc">Antes, uma semana para emitir uma reserva. Com a Onfly, apenas alguns minutos.</p>
+					<div class="feature-card__clip">
+						<div class="clip-card">
+							<a href="https://www.youtube.com/watch?v=VNfF7Ys07wc&t=2s" target="_blank" rel="noopener" class="clip-card__visual" style="position:relative; display:block; aspect-ratio:16/9; overflow:hidden;">
+								<img src="https://www.onfly.com.br/wp-content/uploads/2026/06/picpay.png" alt="Case PicPay — assista ao vídeo completo" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+								<span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+									<span style="width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center;">
+										<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M8 5v14l11-7z"></path></svg>
+									</span>
+								</span>
+							</a>
+							<div class="clip-card__tx">
+								<span>PicPay</span>
+								<span class="clip-card__tx-val">▶ Assistir case</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Case — Grupo Madero -->
+				<div class="feature-card">
+					<div class="feature-card__num">Case</div>
+					<h3 class="feature-card__title">Grupo Madero</h3>
+					<p class="feature-card__desc">Quatro relatórios, nenhum número batia. Um dia e meio só conciliando. Isso não é gestão.</p>
+					<div class="feature-card__clip">
+						<div class="clip-card">
+							<a href="https://www.youtube.com/watch?v=cYV-45lqDGY" target="_blank" rel="noopener" class="clip-card__visual" style="position:relative; display:block; aspect-ratio:16/9; overflow:hidden;">
+								<img src="https://www.onfly.com.br/wp-content/uploads/2026/06/grupo-madero.png" alt="Case Grupo Madero — assista ao vídeo completo" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+								<span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+									<span style="width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center;">
+										<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M8 5v14l11-7z"></path></svg>
+									</span>
+								</span>
+							</a>
+							<div class="clip-card__tx">
+								<span>Grupo Madero</span>
+								<span class="clip-card__tx-val">▶ Assistir case</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Case — Faber-Castell -->
+				<div class="feature-card">
+					<div class="feature-card__num">Case</div>
+					<h3 class="feature-card__title">Faber-Castell</h3>
+					<p class="feature-card__desc">Antes da Onfly, produzir um relatório de viagens levava 7 dias úteis — e esse era apenas um dos problemas.</p>
+					<div class="feature-card__clip">
+						<div class="clip-card">
+							<a href="https://www.youtube.com/watch?v=x-P2t_9Hjzk" target="_blank" rel="noopener" class="clip-card__visual" style="position:relative; display:block; aspect-ratio:16/9; overflow:hidden;">
+								<img src="https://www.onfly.com.br/wp-content/uploads/2026/06/faber-castell.png" alt="Case Faber-Castell — assista ao vídeo completo" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+								<span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+									<span style="width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center;">
+										<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M8 5v14l11-7z"></path></svg>
+									</span>
+								</span>
+							</a>
+							<div class="clip-card__tx">
+								<span>Faber-Castell</span>
+								<span class="clip-card__tx-val">▶ Assistir case</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Case — Méliuz -->
+				<div class="feature-card">
+					<div class="feature-card__num">Case</div>
+					<h3 class="feature-card__title">Méliuz</h3>
+					<p class="feature-card__desc">Antes da Onfly, o Méliuz só via os desvios de orçamento depois que eles já tinham acontecido.</p>
+					<div class="feature-card__clip">
+						<div class="clip-card">
+							<a href="https://www.youtube.com/watch?v=1DxqCR4jq1E" target="_blank" rel="noopener" class="clip-card__visual" style="position:relative; display:block; aspect-ratio:16/9; overflow:hidden;">
+								<img src="https://www.onfly.com.br/wp-content/uploads/2026/06/meliuz.png" alt="Case Méliuz — assista ao vídeo completo" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+								<span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+									<span style="width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center;">
+										<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M8 5v14l11-7z"></path></svg>
+									</span>
+								</span>
+							</a>
+							<div class="clip-card__tx">
+								<span>Méliuz</span>
+								<span class="clip-card__tx-val">▶ Assistir case</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+</div>

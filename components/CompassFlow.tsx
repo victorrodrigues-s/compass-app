@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Quiz from './Quiz';
 import Report from './Report';
 import TrialForm from './TrialForm';
+import PlgFlow from './plg/PlgFlow';
 import { HONEYPOT_FIELD } from '@/lib/guard';
 import { TRIAL_ONLY_SPEND, type CompassReport, type QuizAnswers } from '@/lib/types';
 
@@ -28,7 +29,7 @@ import { TRIAL_ONLY_SPEND, type CompassReport, type QuizAnswers } from '@/lib/ty
  * falha nossa não deveria virar problema de quem já preencheu tudo).
  */
 
-type Stage = 'quiz' | 'report' | 'trial' | 'done' | 'trial-done';
+type Stage = 'quiz' | 'report' | 'trial' | 'done' | 'plg';
 
 export interface CompassFlowProps {
   trialUrl: string;
@@ -40,6 +41,8 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
   const [report, setReport] = useState<CompassReport | null>(null);
   const [answers, setAnswers] = useState<QuizAnswers | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [plgCnpj, setPlgCnpj] = useState<string | null>(null);
+  const [plgFullName, setPlgFullName] = useState<string | null>(null);
 
   async function handleQuizComplete(quizAnswers: QuizAnswers, honeypot: string) {
     setError(null);
@@ -106,8 +109,10 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
       <>
         <TrialForm
           answers={answers}
-          onSubmitted={() => {
-            setStage('trial-done');
+          onPlgStarted={(cnpj, fullName) => {
+            setPlgCnpj(cnpj);
+            setPlgFullName(fullName);
+            setStage('plg');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
@@ -120,28 +125,22 @@ export default function CompassFlow({ trialUrl }: CompassFlowProps) {
     );
   }
 
-  if (stage === 'trial-done') {
+  if (stage === 'plg' && answers && plgCnpj && plgFullName) {
     return (
-      <div className="oc-card oc-success">
-        <div className="oc-success-mark" aria-hidden="true">
-          ✓
-        </div>
-        <h2 className="oc-h2">Tudo certo para começar</h2>
-        <p className="oc-lead" style={{ maxWidth: '46ch', margin: '8px auto 0' }}>
-          Continue no cadastro para definir sua senha e fazer a primeira busca.
-        </p>
-        <div style={{ marginTop: 24 }}>
-          <a
-            className="oc-btn oc-btn-primary"
-            href={trialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: 'inline-block', textDecoration: 'none' }}
-          >
-            Continuar o cadastro
-          </a>
-        </div>
-      </div>
+      <PlgFlow
+        cnpj={plgCnpj}
+        fullName={plgFullName}
+        email={answers.email}
+        phone={answers.phone}
+        companyName={answers.companyName}
+        manualSignupUrl={trialUrl}
+        onRestart={() => {
+          setPlgCnpj(null);
+          setPlgFullName(null);
+          setStage('trial');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     );
   }
 
