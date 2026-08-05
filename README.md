@@ -110,47 +110,59 @@ carrega `meta.source: 'mock'`.
 
 ## Configurando o formulário do HubSpot
 
-**Só existe UM formulário agora.** Os três pontos de contato do funil —
-diagnóstico gerado, clique em "falar com especialista", CNPJ do "testar
-grátis" — submetem para o mesmo `HUBSPOT_FORM_ID_STEP1`. O HubSpot casa pelo
-e-mail: a segunda e a terceira submissão atualizam o mesmo contato criado na
-primeira, não criam um novo.
+**Só existe UM formulário.** Os três pontos de contato do funil — quiz completo,
+"falar com especialista", CNPJ do "testar grátis" — submetem para o mesmo
+`HUBSPOT_FORM_ID_STEP1`. O HubSpot casa pelo e-mail: a segunda e a terceira
+submissão atualizam o mesmo contato criado na primeira.
 
-A API rejeita campos que não existem na definição do formulário. Cada `name`
-abaixo precisa existir como campo do form E como propriedade de contato no
-portal.
+**Todas as propriedades já existem no portal** — confirmadas via API do
+HubSpot em 05/08/2026, não criamos nada novo:
 
-| Campo enviado | Quando | Tipo | Observação |
+| Campo enviado | Propriedade real no HubSpot | Tipo | Observação |
 |---|---|---|---|
-| `email` | sempre | padrão | chave de casamento entre as 3 submissões |
-| `firstname` | quiz completo | padrão | |
-| `phone` | quiz completo | padrão | |
-| `compass_origem_voo` | quiz completo | texto | criar |
-| `compass_destino_voo` | quiz completo | texto | criar |
-| `compass_volume_viagens` | quiz completo | texto | criar |
-| `compass_metodo_reserva` | quiz completo | texto | criar |
-| `compass_dor_principal` | quiz completo | texto | criar |
-| `compass_gasto_mensal` | quiz completo | **enumeração** | ⚠️ ver abaixo |
-| `compass_como_conheceu` | quiz completo | **enumeração** | ⚠️ ver abaixo |
-| `compass_economia_anual` | quiz completo | número | alimenta lead scoring |
-| `compass_horas_economizadas` | quiz completo | número | |
-| `compass_caminho` | ao escolher um caminho | texto | criar — `especialista` ou `trial` |
-| `compass_cnpj` | teste grátis | texto | criar |
+| `email` | `email` | texto | chave de casamento entre as 3 submissões |
+| `firstname` | `firstname` | texto | |
+| `phone` | `phone` | texto | |
+| `company` | `company` | texto | nome da empresa, novo campo no quiz |
+| `quantas_viagens_sua_empresa_faz_por_ms` | idem | **texto livre** | mandamos rótulo legível (`TRIP_VOLUME_LABELS`), não o código interno |
+| `usa_alguma_agncia_de_viagem_` | idem | **texto livre** | mandamos rótulo legível (`BOOKING_METHOD_LABELS`) |
+| `gmv_empresa` | idem | **enumeração** | os 6 valores do quiz já batem com os valores reais |
+| `self_attribution_message` | idem | **enumeração** | ⚠️ ver abaixo — valor ≠ rótulo em vários casos |
+| `cnpj` | `cnpj` | **número** | ⚠️ ver abaixo |
 
-> **`compass_gasto_mensal` e `compass_como_conheceu` provavelmente JÁ EXISTEM
-> no seu HubSpot** — os prints que você mandou batem com dropdowns que
-> parecem já estar em uso (o "como conheceu" em particular, com opções bem
-> específicas tipo "TV de Bordo Azul", claramente não é um campo genérico).
-> **Confirme o nome interno real dessas duas propriedades no HubSpot antes de
-> configurar** — os nomes acima (`compass_gasto_mensal`,
-> `compass_como_conheceu`) são um palpite meu. Se o nome real for diferente,
-> ajuste em `lib/hubspot.ts`; não é uma env var, é o segundo argumento de
-> `field(...)` nas chamadas de `submitStep1`.
+### `self_attribution_message` — valor ≠ rótulo
 
-As opções de `MONTHLY_SPEND_OPTIONS` e `HOW_HEARD_OPTIONS`, em `lib/types.ts`,
-foram tiradas direto dos prints que você mandou — inclusive o "Mais de 2
-milhão de reais/mês" no singular, que não é erro de digitação meu, é o texto
-exato que apareceu no seu print.
+Confirmado via API, não por print. O rótulo é o texto que aparece no select;
+o **valor** é o que precisa ser enviado, e diverge do rótulo em vários casos:
+
+| Rótulo (visível) | Valor (enviado) |
+|---|---|
+| Aeroporto & Outdoor | `Aeroporto` |
+| Instagram/Facebook/Tiktok | `Instagram/Facebook` |
+| Podcast/Imprensa/Sites de notícia | `Imprensa/Sites de notícia` |
+| Spotify & Rádio | `Anúncio do Spotify` |
+| TV & Streaming | `TV` |
+| Influenciador | `Influênciador` (acento a mais no valor) |
+
+`HOW_HEARD_OPTIONS`, em `lib/types.ts`, já está estruturado como
+`{ value, label }[]` — o componente renderiza o `label` e envia o `value`.
+Se o dropdown mudar no HubSpot no futuro, atualize esse array com os valores
+reais (não adivinhe pelo rótulo — foi exatamente esse erro que gerou essa nota).
+
+### `cnpj` é do tipo Número, não Texto
+
+Um CNPJ que comece com zero à esquerda perde esse dígito ao ser armazenado
+como número. Isso é a configuração da propriedade no HubSpot, não algo que o
+código resolve — vale saber que existe esse risco se um dia um CNPJ aparecer
+"faltando um dígito" nos relatórios.
+
+### O que NÃO vai para o HubSpot
+
+Aeroporto de origem/destino, dor principal declarada, economia anual
+projetada, horas economizadas e o caminho escolhido (especialista/trial) —
+nenhum tem propriedade correspondente hoje e o time optou por não criar uma.
+Esses dados continuam existindo no relatório mostrado na tela do usuário, só
+não são persistidos no CRM.
 
 ### Comportamento em caso de falha
 
