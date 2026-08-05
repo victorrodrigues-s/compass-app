@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { submitTrialInterest } from '@/lib/hubspot';
 import { checkRateLimit, clientIp, honeypotTripped } from '@/lib/guard';
-import { cnpjDigits, isValidCnpj, isValidEmail } from '@/lib/validation';
+import { parseBaseAnswers } from '@/lib/quiz-validation';
+import { cnpjDigits, isValidCnpj } from '@/lib/validation';
 
 /**
  * POST /api/trial
  *
- * CNPJ do "testar grátis" — único dado que ainda não temos nesse ponto do
- * funil, porque é exigência de abertura de conta, não qualificação de lead.
+ * CNPJ do "testar grátis" — junto com o conjunto base completo, pelo mesmo
+ * motivo do /api/hubspot: campos obrigatórios do formulário são validados em
+ * toda submissão ao HubSpot, não só na primeira.
  */
 
 export const runtime = 'nodejs';
@@ -33,9 +35,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Requisição rejeitada.' }, { status: 400 });
   }
 
-  const email = String(raw?.email ?? '').trim().toLowerCase();
-  if (!isValidEmail(email)) {
-    return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 });
+  const parsed = parseBaseAnswers(raw);
+  if ('error' in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
   const cnpj = String(raw?.cnpj ?? '');
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await submitTrialInterest(email, cnpjDigits(cnpj), {
+    await submitTrialInterest(parsed.answers, cnpjDigits(cnpj), {
       hutk: req.cookies.get('hubspotutk')?.value,
       ipAddress: ip,
       pageUri: req.headers.get('referer') ?? undefined,
